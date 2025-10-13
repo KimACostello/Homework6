@@ -1,0 +1,88 @@
+---
+title: "Homework 6"
+author: "Kim Costello"
+format: html
+editor: visual
+---
+
+## Task 1: Conceptual Questions
+
+1.  **What is the purpose of `lapply()` function? What is the equivalent `purrr` function?** `lapply` applies a function to a list. The equivalent `purrr` function is `map()`.
+
+2.  **Suppose we have a list called `my_list`. Each element of the list is a numeric data frame (all columns are numeric). We want use `lapply()` to run the code `cor(numeric_matrix, method = "kendall")` on each element of the list. Write code to do this below! (I’m really trying to ask you how you specify `method = "kendall"` when calling `lapply()`).**\
+    `lapply(X = my_list, MARGIN = 2, FUN = cor, method = "kendall")`
+
+3.  **What are two advantages of using `purrr` functions instead of the BaseR apply family?** More consistency and helper functions!
+
+4.  **What is a side-effect function?** A function that does not change the data, but produces something. Examples are print(), write_csv(), and plot().
+
+5.  **Why can you name a variable `sd` in a function and not cause any issues with the `sd` function?** This is due to lexical scoping. When you call a function, it creates a temporary function environment. It remains in that environment and doesn't override the sd function. If R doesn't find the object in the current environment, then it will search up the path and can still access the sd function.
+
+
+## Task 2: Writing R Functions
+
+## Task 3: Practice with purrr
+
+Set up: 
+```{r}
+library(purrr)
+```
+
+
+Let's create a list object. 
+```{r}
+lm_fit1 <- lm(Sepal.Length ~ Sepal.Width + Species, data = iris)
+```
+
+1.  Pull out the `coefficients` list element using $, `coef()`, and the `pluck()` function from `purrr`.
+```{r}
+lm_fit1$coefficients
+```
+```{r}
+coef(lm_fit1) 
+```
+
+```{r}
+lm_fit1 |>
+  pluck(coefficients)
+```
+2.  Let's fit a number of different models with the code below. 
+```{r}
+lm_fit2 <- lm(Sepal.Length ~ Sepal.Width, data = iris)
+lm_fit3 <- lm(Sepal.Length ~ Petal.Width + Sepal.Width + Species, data = iris)
+lm_fit4 <- lm(Sepal.Length ~ Petal.Width + Petal.Length + Sepal.Width + Species,
+              data = iris)
+fits <- list(lm_fit1, lm_fit2, lm_fit3, lm_fit4)
+```
+
+Use the `map()` function to pull out the coefficients of each model fit from the `fits` object, using `pluck()`. 
+```{r}
+map(fits, 
+    \(x) pluck(x, "coefficients"))
+```
+
+3.  Use `map()` to apply the `confint()` function to each model fit in the `fits` object.
+```{r}
+map(fits, confint)
+```
+
+Now, let's create histograms of the residuals in each model fit! 
+
+```{r}
+par(mfrow = c(2, 2))  #set up plotting window
+fits |>
+  map(\(x) pluck(x, "residuals")) |>
+  walk(hist)
+  
+```
+Use `set_names()` function to give names to the list elements.
+```{r}
+resid <- map(fits, 
+             \(x) pluck(x, "residuals")) |>
+  set_names(c("fit1", "fit2", "fit3", "fit4"))
+
+par(mfrow = c(2, 2))
+iwalk(resid, names(resid), 
+      \(x) hist(x))
+```
+
