@@ -21,6 +21,51 @@ editor: visual
 
 ## Task 2: Writing R Functions
 
+1.  Write a basic function that takes in a vector of responses and a vector of predictions
+and outputs the RMSE.RMSE is the square root of the average of squared errors.
+```{r}
+getRMSE <- function(resp_vec, pred_vec, ...){
+  squared_error <- map2(resp_vec, pred_vec, \(x,y) (x-y)^2)
+  squared_mean <- mean(unlist(squared_error),...)
+  square_root <- sqrt(squared_mean)
+  return(square_root)
+}
+```
+
+2.  Run the code to create some response values and predictions.
+```{r}
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+```
+Test Function: 
+```{r}
+getRMSE(resp, pred)
+```
+Manually replace two of the response values with missing values (NA_real_) (just assign
+two values to NA_real_). 
+```{r}
+resp[1] <- NA_real_
+resp[2] <- NA_real_
+```
+
+Test the RMSE function without and with specifying the behavior to deal with missing values. 
+```{r}
+#without
+getRMSE(resp, pred)
+```
+```{r}
+#with
+getRMSE(resp, pred, na.rm = TRUE)
+```
+3.  
+
+
+
+
+
 ## Task 3: Practice with purrr
 
 Set up: 
