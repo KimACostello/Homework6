@@ -22,8 +22,10 @@ editor: visual
 ## Task 2: Writing R Functions
 
 1.  Write a basic function that takes in a vector of responses and a vector of predictions
-and outputs the RMSE.RMSE is the square root of the average of squared errors.
+and outputs the RMSE. RMSE is the square root of the average of squared errors.
 ```{r}
+library(purrr)
+
 getRMSE <- function(resp_vec, pred_vec, ...){
   squared_error <- map2(resp_vec, pred_vec, \(x,y) (x-y)^2)
   squared_mean <- mean(unlist(squared_error),...)
@@ -60,10 +62,115 @@ getRMSE(resp, pred)
 #with
 getRMSE(resp, pred, na.rm = TRUE)
 ```
-3.  
+3.  Write a basic function that takes in a vector of responses and a vector of predictions
+and outputs the Mean Absolute Deviation. 
+```{r}
+getMAE <- function(resp_vec, pred_vec, ...){
+  abs_diffs <- map2(resp_vec, pred_vec, \(x,y) abs(x-y))
+  mean_diffs <- mean(unlist(abs_diffs),...)
+  return(mean_diffs)
+}
+```
 
+4.  Run the the following code to create some response values and predictions. 
+```{r}
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+```
+Test `getMAE()` function. 
+```{r}
+getMAE(resp, pred)
+```
+Replace two of the response values with missing values. 
+```{r}
+resp[4] <- NA_real_
+resp[5] <- NA_real_
+```
+Test the MAE function without and with specifying the behavior to deal with missing values.
+```{r}
+#without
+getMAE(resp, pred)
+```
+```{r}
+#with
+getRMSE(resp, pred, na.rm = TRUE)
+```
+5.  Create a wrapper function that can be used to get either or both metrics returned with a single function call. 
+```{r}
+MAE_RMSE_wrapper <- function(resp_vec, pred_vec, return_MAE = TRUE, return_RMSE = TRUE, ...){
+  if (!is.vector(resp_vec)) {stop("Responses are not a vector!")}
+  if (!is.vector(pred_vec)) {stop("Predictions are not a vector!")}
+  if (!is.numeric(resp_vec)) {stop("Responses are not numeric!")}
+  if (!is.numeric(pred_vec)) {stop("Predictions are not numeric!")}
+  
+  results <- list()
+  
+  if(return_MAE) {
+    results$MAE_result <- getMAE(resp_vec, pred_vec,...)
+  }
+  if(return_RMSE) {
+    results$RMSE_result <- getRMSE(resp_vec, pred_vec,...)
+  }
+  return(results)
+}
 
+```
+6.  Run the following code to create some response values and predictions. 
+```{r}
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+```
 
+Test function. Call it once asking for each metric individually and once specifying both metrics. 
+```{r}
+#Return both metrics
+MAE_RMSE_wrapper(resp, pred)
+```
+```{r}
+#Return only RMSE
+MAE_RMSE_wrapper(resp, pred, return_MAE = FALSE)
+```
+```{r}
+#Return only MAE
+MAE_RMSE_wrapper(resp, pred, return_RMSE = FALSE)
+```
+Repeat with replacing two of the response values with missing values. 
+```{r}
+resp[2] <- NA_real_
+resp[3] <- NA_real_
+```
+
+```{r}
+MAE_RMSE_wrapper(resp, pred, na.rm = TRUE)
+MAE_RMSE_wrapper(resp, pred, return_MAE = FALSE, na.rm = TRUE)
+MAE_RMSE_wrapper(resp, pred, return_RMSE = FALSE, na.rm = TRUE)
+```
+Test function by passing it incorrect data (not a vector). 
+```{r}
+library(Lahman)
+library(tidyverse)
+
+my_batting <- Batting[, c("playerID", "teamID", "G", "AB", "R", "H", "X2B", "X3B", "HR")] |>
+  as_tibble()
+my_batting
+
+char_vec <- c("Hi", "Hello", "Bonjour", "Hola")
+```
+
+```{r}
+#| error: TRUE
+MAE_RMSE_wrapper(my_batting, pred, na.rm = TRUE)
+```
+```{r}
+#| error: TRUE
+MAE_RMSE_wrapper(resp, char_vec, na.rm = TRUE)
+```
 
 
 ## Task 3: Practice with purrr
@@ -111,7 +218,7 @@ map(fits,
 map(fits, confint)
 ```
 
-Now, let's create histograms of the residuals in each model fit! 
+4.  Now, let's create histograms of the residuals in each model fit! 
 
 ```{r}
 par(mfrow = c(2, 2))  #set up plotting window
@@ -120,14 +227,16 @@ fits |>
   walk(hist)
   
 ```
-Use `set_names()` function to give names to the list elements.
+5.  Use `set_names()` function to give names to the list elements.
 ```{r}
 resid <- map(fits, 
              \(x) pluck(x, "residuals")) |>
   set_names(c("fit1", "fit2", "fit3", "fit4"))
+```
 
+Attempt at using `iwalk`.
+```{r}
 par(mfrow = c(2, 2))
-iwalk(resid, names(resid), 
-      \(x) hist(x))
+iwalk(resid, names(resid), \(x) hist(x))
 ```
 
